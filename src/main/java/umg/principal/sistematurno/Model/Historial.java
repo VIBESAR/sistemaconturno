@@ -1,5 +1,6 @@
 package umg.principal.sistematurno.Model;
 
+import umg.principal.sistematurno.Model.Turno;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -19,6 +20,10 @@ public class Historial {
     @ManyToOne
     @JoinColumn(name = "servicio_id")
     private Servicio servicio;
+
+    @ManyToOne
+    @JoinColumn(name = "turno_id")
+    private Turno turno;
 
     // Getters y Setters
 
@@ -60,5 +65,9 @@ public class Historial {
 
     public void setServicio(Servicio servicio) {
         this.servicio = servicio;
+    }
+
+    public void setTurno(Turno turno) {
+        this.turno = turno;
     }
 }
