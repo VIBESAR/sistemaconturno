@@ -1,13 +1,16 @@
 package umg.principal.sistematurno.Structure;
 
 import umg.principal.sistematurno.Model.Historial;
+
 import java.util.LinkedList;
 import java.util.List;
 
 public class HistorialLista{
+
     private final List<Historial> historial;
 
     public HistorialLista() {
+
         this.historial = new LinkedList<>();
     }
 
@@ -21,5 +24,9 @@ public class HistorialLista{
 
     public int tamaño() {
         return historial.size();
+    }
+
+    public List<Historial> getTodos() {
+        return historial;
     }
 }

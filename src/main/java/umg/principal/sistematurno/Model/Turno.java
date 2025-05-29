@@ -1,6 +1,7 @@
 package umg.principal.sistematurno.Model;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -9,6 +10,9 @@ public class Turno {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String descripcion;
+    private boolean completada;
+    private LocalDate fechaProgramada;
     private LocalDateTime fechaCreacion;
     private boolean atendido;
 
@@ -28,6 +32,30 @@ public class Turno {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public boolean isCompletada() {
+        return completada;
+    }
+
+    public void setCompletada(boolean completada) {
+        this.completada = completada;
+    }
+
+    public LocalDate getFechaProgramada() {
+        return fechaProgramada;
+    }
+
+    public void setFechaProgramada(LocalDate fechaProgramada) {
+        this.fechaProgramada = fechaProgramada;
     }
 
     public LocalDateTime getFechaCreacion() {
