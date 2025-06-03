@@ -1,19 +1,24 @@
 package umg.principal.sistematurno.Structure;
 
+import umg.principal.sistematurno.Model.Accion;
+
 import java.util.Stack;
 
 public class PilaAcciones {
-    private final Stack<String> pila;
+
+    private final Stack<Accion> pila;
 
     public PilaAcciones() {
         this.pila = new Stack<>();
     }
 
-    public void registrarAccion(String accion) {
+    // Registrar acción (crear, editar, eliminar)
+    public void registrarAccion(Accion accion) {
         pila.push(accion);
     }
 
-    public String deshacerUltimaAccion() {
+    // Deshacer la última acción registrada
+    public Accion deshacerUltimaAccion() {
         return pila.isEmpty() ? null : pila.pop();
     }
 
@@ -23,5 +28,9 @@ public class PilaAcciones {
 
     public int tamaño() {
         return pila.size();
+    }
+
+    public Stack<Accion> getHistorial() {
+        return pila;
     }
 }

@@ -2,11 +2,14 @@ package umg.principal.sistematurno.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import umg.principal.sistematurno.Model.Accion;
+import umg.principal.sistematurno.Model.Historial;
+import umg.principal.sistematurno.Model.Turno;
+import umg.principal.sistematurno.Repository.HistorialRepository;
+import umg.principal.sistematurno.Repository.TurnoRepository;
 import umg.principal.sistematurno.Structure.ColaTurnos;
 import umg.principal.sistematurno.Structure.HistorialLista;
-import umg.principal.sistematurno.Model.Turno;
-import umg.principal.sistematurno.Model.Historial;
-import umg.principal.sistematurno.Repository.TurnoRepository;
+import umg.principal.sistematurno.Structure.PilaAcciones;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,30 +21,45 @@ public class ServiceTurno {
     private final ColaTurnos cola;
     private final HistorialLista historial;
     private final TurnoRepository turnoRepository;
+    private final HistorialRepository historialRepository;
     private final TurnoProducer turnoProducer;
+    private final PilaAcciones pilaAcciones = new PilaAcciones();
 
     @Autowired
-    public ServiceTurno(TurnoRepository turnoRepository, TurnoProducer turnoProducer) {
+    private LogMongoService logMongoService; // 👉 inyectado aquí
+
+    @Autowired
+    public ServiceTurno(
+            TurnoRepository turnoRepository,
+            TurnoProducer turnoProducer,
+            HistorialRepository historialRepository
+    ) {
         this.cola = new ColaTurnos();
         this.historial = new HistorialLista();
         this.turnoRepository = turnoRepository;
         this.turnoProducer = turnoProducer;
+        this.historialRepository = historialRepository;
     }
 
-    // POST /tareas
     public Turno crearTurno(Turno turno) {
-        cola.agregarTurno(turno); // estructura de datos
-        Turno guardado = turnoRepository.save(turno); // persistencia
-        turnoProducer.enviarTurno(guardado); // 👉 enviar mensaje a RabbitMQ
+        if (turno.getFechaCreacion() == null) {
+            turno.setFechaCreacion(LocalDateTime.now());
+        }
+
+        cola.agregarTurno(turno);
+        Turno guardado = turnoRepository.save(turno);
+        turnoProducer.enviarTurno(guardado);
+        pilaAcciones.registrarAccion(new Accion("crear", guardado));
+
+        logMongoService.log("crear", "Turno creado con ID: " + guardado.getId()); // 👉 log en Mongo
+
         return guardado;
     }
 
-    // GET /tareas
     public List<Turno> listarTurnos() {
         return turnoRepository.findAll();
     }
 
-    // PUT /tareas/{id}
     public Turno actualizarTurno(Long id, Turno nuevoTurno) {
         Optional<Turno> op = turnoRepository.findById(id);
         if (op.isPresent()) {
@@ -49,26 +67,41 @@ public class ServiceTurno {
             existente.setDescripcion(nuevoTurno.getDescripcion());
             existente.setCompletada(nuevoTurno.isCompletada());
             existente.setFechaProgramada(nuevoTurno.getFechaProgramada());
-            return turnoRepository.save(existente);
+
+            Turno actualizado = turnoRepository.save(existente);
+            pilaAcciones.registrarAccion(new Accion("editar", actualizado));
+            logMongoService.log("editar", "Turno actualizado con ID: " + actualizado.getId()); // 👉 log
+            return actualizado;
         } else {
             throw new RuntimeException("Turno no encontrado con id: " + id);
         }
     }
 
-    // DELETE /tareas/{id}
     public void eliminarTurno(Long id) {
-        turnoRepository.deleteById(id);
+        Optional<Turno> turno = turnoRepository.findById(id);
+        if (turno.isPresent()) {
+            turnoRepository.deleteById(id);
+            pilaAcciones.registrarAccion(new Accion("eliminar", turno.get()));
+            logMongoService.log("eliminar", "Turno eliminado con ID: " + id); // 👉 log
+        } else {
+            throw new RuntimeException("Turno no encontrado con id: " + id);
+        }
     }
 
-    // Simular atención
-    public void atenderTurno() {
+    public boolean atenderTurno() {
         Turno turno = cola.obtenerSiguienteTurno();
         if (turno != null) {
             Historial h = new Historial();
             h.setTurno(turno);
+            h.setCliente(turno.getCliente());
+            h.setServicio(turno.getServicio());
             h.setFechaAtencion(LocalDateTime.now());
             historial.agregarRegistro(h);
+            historialRepository.save(h);
+            logMongoService.log("atender", "Turno atendido con ID: " + turno.getId()); // 👉 log
+            return true;
         }
+        return false;
     }
 
     public void verEstado() {
@@ -79,4 +112,9 @@ public class ServiceTurno {
     public List<Historial> obtenerHistorialSimulado() {
         return historial.getTodos();
     }
+
+    public PilaAcciones getPilaAcciones() {
+        return pilaAcciones;
+    }
 }
+

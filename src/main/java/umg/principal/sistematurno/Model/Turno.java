@@ -24,6 +24,12 @@ public class Turno {
     @JoinColumn(name = "servicio_id")
     private Servicio servicio;
 
+    // Auto-asignar fecha de creación antes de guardar en la BD
+    @PrePersist
+    protected void onCreate() {
+        this.fechaCreacion = LocalDateTime.now();
+    }
+
     // Getters y Setters
 
     public Long getId() {
@@ -90,4 +96,5 @@ public class Turno {
         this.servicio = servicio;
     }
 }
+
 
